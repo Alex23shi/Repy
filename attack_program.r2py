@@ -4,18 +4,24 @@ if "testfile.txt" in listfiles():
 myfile=openfile("testfile.txt",True)  #Create a parity file
 
 # put some valid data in the file.
-myfile.writeat("AA",0)
+#myfile.writeat("AA",0)
 
 # I should be able to read it out.
-assert('AA' == myfile.readat(None,0))
+#assert('AA' == myfile.readat(None,0))
 
 # However, this write should fail...
 try:
-  myfile.writeat("BCBCBC",2)
+  myfile.writeat("AAAAAAAABBBBBBBBAAAAAAAABBBBBBBB",0)
+  #myfile.writeat("BBB",10)
+  #myfile.writeat("AAA",3)
+  #myfile.writeat("BBBBBBBBBBBB",6)
+  myfile.writeat("B",3)
 except RepyParityError:
-  pass  # should happen
-else:
-  log("should have been an error instead!")
+  log("exception happened.\n")
+  #pass  # should happen
+
+#else:
+  #log("should have been an error instead!")
 
 #Close the file
 myfile.close()
