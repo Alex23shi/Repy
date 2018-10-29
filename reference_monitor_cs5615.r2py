@@ -26,31 +26,49 @@ class EvenParityFile():
     return self.file.readat(bytes,offset)
 
   def writeat(self,data,offset):
+    originallen = len(self.file.readat(None,0))
+    if offset < 0:
+        raise RepyParityError("Offset is a negative value")
+    if originallen == 0 and offset > 0:
+        raise SeekPastEndOfFileError("Invalid Offset") # blocks writes on non-zero offset on empty
+    if data == "":
+        raise RepyParityError("NULL data")
     k = offset % 8 # k is for calculating the prefix
-    m = offset - k
+    m = offset - k # m is the new offset
+    flag = 1 # defines whether we should perform a write
     prefix = self.file.readat(k,m) # this is the prefix, so that the data always writes in multiples of 8
+    if offset == 0:
+        prefix = ""
     size = len(self.file.readat(None,m)) #this size starts from the prefix of the data to be written, till the end of the file
     newsize = len(prefix)+len(data) #this size is the prefix+data, we compare them below
     if newsize >= size: # prefix + new data >= end of file, actually writes new data at the end of the file
         thisdata = prefix + data #thisdata is data addied by the prefix
+        # log ("this data is:", thisdata, "\n")
         while thisdata:
             eightbytesequence = thisdata[:8]
             thisdata = thisdata[8:]
             if len(eightbytesequence) < 8: # mod 8
-                self.file.writeat(eightbytesequence,offset)
-                #log ("last wrote without parity check", eightbytesequence, offset, "\n") # just to test
+                pass
+                #self.file.writeat(eightbytesequence,m)
+                # log ("last wrote without parity check", eightbytesequence, offset, "\n") # just to test
             else:
                 even = True
                 for thisbyte in eightbytesequence: #for each byte, if it is odd, flip even to be the opposite
                     if ord(thisbyte) % 2:
                         even = not even  # actually call write, if we are supposed to...
                 if even :
-                    self.file.writeat(eightbytesequence,offset)
-                    #log ("wrote case1", eightbytesequence, offset, "\n") # just to test
-                    offset = offset + 8 #this is for writing multiples of 8
+                    pass
+                    #self.file.writeat(eightbytesequence, m)
+                    #log ("wrote case1", eightbytesequence, m, "\n") # just to test
+                    #m = m + 8 #this is for writing multiples of 8
                 # ...or error out.
                 else:
-                    raise RepyParityError("Non-even parity write to file")
+                    flag = 0
+                    #raise RepyParityError("Non-even parity write to file")
+        if flag == 1:
+            self.file.writeat(prefix+data, m)
+        else:
+            raise RepyParityError("Non-even parity write to file")
     else: # prefix + new data < end of file, in this case we are overwriting not creating new data
         suffix = self.file.readat(None,m+newsize) #take all of the rest of the original file as a new source so that it eases the parity check
         thisdata = prefix + data + suffix #thisdata is data added by the prefix and suffix
@@ -58,20 +76,27 @@ class EvenParityFile():
             eightbytesequence = thisdata[:8]
             thisdata = thisdata[8:]
             if len(eightbytesequence) < 8: # mod 8
-                self.file.writeat(eightbytesequence,offset)
-                #log ("last wrote without parity check", eightbytesequence, offset, "\n") # just to test
+                pass
+                #self.file.writeat(eightbytesequence,m)
+                # log ("last wrote without parity check", eightbytesequence, offset, "\n") # just to test
             else:
                 even = True
                 for thisbyte in eightbytesequence: #for each byte, if it is odd, flip even to be the opposite
                     if ord(thisbyte) % 2:
                         even = not even  # actually call write, if we are supposed to...
                 if even :
-                    self.file.writeat(eightbytesequence,offset)
-                    #log ("wrote case2", eightbytesequence, offset, "\n") # just to test
-                    offset = offset + 8
+                    pass
+                    #self.file.writeat(eightbytesequence, m)
+                    #log ("wrote case1", eightbytesequence, m, "\n") # just to test
+                    #m = m + 8 #this is for writing multiples of 8
                 # ...or error out.
                 else:
-                    raise RepyParityError("Non-even parity write to file")
+                    flag = 0
+                    #raise RepyParityError("Non-even parity write to file")
+        if flag == 1:
+            self.file.writeat(prefix+data+suffix, m)
+        else:
+            raise RepyParityError("Non-even parity write to file")
 
 
 
